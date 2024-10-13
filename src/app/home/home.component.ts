@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatGridListModule } from '@angular/material/grid-list';
+import { datadogRum } from '@datadog/browser-rum';
 
 @Component({
   selector: 'app-home',
@@ -17,6 +18,10 @@ import { MatGridListModule } from '@angular/material/grid-list';
   styleUrls: ['./home.component.scss']
 })
 export class HomeComponent implements AfterContentInit {
+
+  ngOnInit(){
+    // console.log('aqui', (window as any).timePerformance)
+  }
 
   ngAfterContentInit() {
     this.calcPerfTimeManual();
@@ -36,15 +41,9 @@ export class HomeComponent implements AfterContentInit {
       const perfObserver = () => new PerformanceObserver((res) => {
         const listTimeDuration = Array<number>();
         const duracao = res.getEntries()[0].duration;
-        console.log('duracao', duracao);
         listTimeDuration.push(duracao);
         localStorage.setItem('timeStoredPerformanceAPIDuration', JSON.stringify(listTimeDuration));
-        
-        console.log("25º Percentil duration:", this.calculatePercentile(listTimeDuration, 25));
-        console.log("50º Percentil (Mediana) duration:", this.calculatePercentile(listTimeDuration, 50));
-        console.log("75º Percentil duration:", this.calculatePercentile(listTimeDuration, 75));
-        console.log("90º Percentil duration:", this.calculatePercentile(listTimeDuration, 90));
-        console.log("95º Percentil duration:", this.calculatePercentile(listTimeDuration, 95));
+        this.printPercentil(listTimeDuration, '1');
       });
       perfObserver();
     }
@@ -56,41 +55,25 @@ export class HomeComponent implements AfterContentInit {
         console.log('dom content load', domContentLoad);
         listTime.push(domContentLoad)
         localStorage.setItem('timeStoredPerformanceAPIDomLoad', JSON.stringify(listTime))
-        console.log("25º Percentil dom load:", this.calculatePercentile(listTime, 25));
-        console.log("50º Percentil (Mediana) dom load:", this.calculatePercentile(listTime, 50));
-        console.log("75º Percentil dom load:", this.calculatePercentile(listTime, 75));
-        console.log("90º Percentil dom load:", this.calculatePercentile(listTime, 90));
-        console.log("95º Percentil dom load:", this.calculatePercentile(listTime, 95));
+        this.printPercentil(listTime, '2');
       });
       perfObserver2();
     } else {
       const perfObserver = () => new PerformanceObserver((res) => {
         const storedTimeDurationJson = JSON.parse(storedTimePerformanceAPIDuration!);
         const duracao = res.getEntries()[0].duration;
-        console.log('duracao', duracao);
         storedTimeDurationJson.push(duracao)
         localStorage.setItem('timeStoredPerformanceAPIDuration', JSON.stringify(storedTimeDurationJson));
-
-        console.log("25º Percentil duration:", this.calculatePercentile(storedTimeDurationJson, 25));
-        console.log("50º Percentil (Mediana) duration:", this.calculatePercentile(storedTimeDurationJson, 50));
-        console.log("75º Percentil duration:", this.calculatePercentile(storedTimeDurationJson, 75));
-        console.log("90º Percentil duration:", this.calculatePercentile(storedTimeDurationJson, 90));
-        console.log("95º Percentil duration:", this.calculatePercentile(storedTimeDurationJson, 95));
+        this.printPercentil(storedTimeDurationJson, '3');
       });
       perfObserver();
 
       const perfObserver2 = () => new PerformanceObserver((res) => {
         const storedTimeDomLoadJson = JSON.parse(storedTimePerformanceAPIDomLoad!);
         const domContentLoad = res.getEntries()[0].toJSON().domContentLoadedEventEnd;
-        console.log('dom content load', domContentLoad);
         storedTimeDomLoadJson.push(domContentLoad);
         localStorage.setItem('timeStoredPerformanceAPIDomLoad', JSON.stringify(storedTimeDomLoadJson));
-
-        console.log("25º Percentil dom load:", this.calculatePercentile(storedTimeDomLoadJson, 25));
-        console.log("50º Percentil (Mediana) dom load:", this.calculatePercentile(storedTimeDomLoadJson, 50));
-        console.log("75º Percentil dom load:", this.calculatePercentile(storedTimeDomLoadJson, 75));
-        console.log("90º Percentil dom load:", this.calculatePercentile(storedTimeDomLoadJson, 90));
-        console.log("95º Percentil dom load:", this.calculatePercentile(storedTimeDomLoadJson, 95));
+        this.printPercentil(storedTimeDomLoadJson, '4');
 
       });
       perfObserver2();
@@ -101,24 +84,27 @@ export class HomeComponent implements AfterContentInit {
     const storedTime = localStorage.getItem('timeStored');
     const timer = new Date().getTime() - (window as any).timePerformance;
     if (!storedTime) {
-      console.log('perfomance manual: ', timer);
       const listTime = Array<number>();
       listTime.push(timer)
       localStorage.setItem('timeStored', JSON.stringify(listTime))
     } else {
       const storedTimeJson = JSON.parse(storedTime);
-      console.log('perfomance manual: ', timer);
       storedTimeJson.push(timer);
       localStorage.setItem('timeStored', JSON.stringify(storedTimeJson))
     }
 
     const storedListTime = JSON.parse(localStorage.getItem('timeStored')!);
+    this.printPercentil(storedListTime, '5');
+  }
 
-    console.log("25º Percentil:", this.calculatePercentile(storedListTime, 25));
-    console.log("50º Percentil (Mediana):", this.calculatePercentile(storedListTime, 50));
-    console.log("75º Percentil:", this.calculatePercentile(storedListTime, 75));
-    console.log("90º Percentil:", this.calculatePercentile(storedListTime, 90));
-    console.log("95º Percentil:", this.calculatePercentile(storedListTime, 95));
+  private printPercentil(arg: Array<any>, description: string) {
+    datadogRum.addDurationVital("p90", {startTime:  (window as any).timePerformance, duration: arg[arg.length - 1 ]})
+    console.log('atual:', arg, arg[arg.length - 1])
+    console.log("25º Percentil:", description , this.calculatePercentile(arg, 25));
+    console.log("50º Percentil (Mediana):", description, this.calculatePercentile(arg, 50));
+    console.log("75º Percentil:",description, this.calculatePercentile(arg, 75));
+    console.log("90º Percentil:",description, this.calculatePercentile(arg, 90));
+    console.log("95º Percentil:",description, this.calculatePercentile(arg, 95));
   }
 
   private calculatePercentile(arr: Array<any>, percentile: number) {
