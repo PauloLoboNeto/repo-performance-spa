@@ -1,22 +1,32 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>AngularPerformancePoc</title>
-  <base href="/">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link rel="preconnect" href="https://fonts.gstatic.com">
-</head>
-<script>
-  window.timePerformance = window.performance.timing.navigationStart //new Date().getTime();
-  
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularPerformancePoc</title>
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+  </head>
+  <script title="window" text="window">
+    window.timePerformance = window.performance.timing.navigationStart; //new Date().getTime();
+  </script>
+  <!-- <script src="assets/heavy-script.js" defer></script> -->
 
-</script>
-<body class="mat-typography">
-  <!-- <h1 style="background-color: aquamarine; padding: 30px;">teste</h1> -->
-  <h1>teste</h1>
-  <app-root></app-root>
+  <script>
+    if (window.Worker) {
+      const worker = new Worker("assets/heavy-script-webworker.js");
 
-</body>
+      worker.onmessage = function (e) {
+        console.log("Resultado do Worker:", e.data);
+      };
+
+      worker.postMessage(45); // Cálculo pesado de Fibonacci
+    }
+  </script>
+
+  <body class="mat-typography">
+    <!-- <h1 style="background-color: aquamarine; padding: 30px;">teste</h1> -->
+    <h1>teste</h1>
+    <app-root></app-root>
+  </body>
 </html>
